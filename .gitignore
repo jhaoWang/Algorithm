@@ -1,0 +1,19 @@
+# Visual Studio 缓存
+.vs/
+*.ipch
+*.pdb
+*.ilk
+
+# 编译输出
+bin/
+build/
+x64/
+x86/
+Debug/
+Release/
+
+# 临时文件
+*.log
+*.obj
+*.tlog
+*.lastbuildstate
