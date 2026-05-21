@@ -20,26 +20,40 @@ bool OnnxInferenceEngine::loadModel(const std::string& path)
 		m_session = std::make_unique<Ort::Session>(*m_env, std::wstring(path.begin(), path.end()).c_str(), *m_session_options);
 
 		Ort::AllocatorWithDefaultOptions allocater;
+
+		m_input_name.clear();
+		m_input_name_ptr.clear();
 		size_t size_input = m_session->GetInputCount();
 		for (size_t i = 0; i < size_input; i++)
 		{
 			auto name = m_session->GetInputNameAllocated(i, allocater);
-			m_input_name.push_back(name.get());
-			m_input_name_ptr.push_back(m_input_name.back().c_str());
+			m_input_name.emplace_back(name.get());
 			std::cout << "input" << i << ":" << name.get() << std::endl;
 		}
+
+		for (auto& name : m_input_name)
+		{
+			m_input_name_ptr.push_back(name.c_str());
+		}
+
+		m_output_name.clear();
+		m_output_name_ptr.clear();
 
 		size_t size_output = m_session->GetOutputCount();
 		for (size_t i = 0; i < size_output; i++)
 		{
 			auto name = m_session->GetOutputNameAllocated(i, allocater);
-			m_output_name.push_back(name.get());
-			m_output_name_ptr.push_back(m_output_name.back().c_str());
-			std::cout << "input" << i << ":" << name.get() << std::endl;
+			m_output_name.emplace_back(name.get());
+			std::cout << "output" << i << ":" << name.get() << std::endl;
 			
 			auto typeInfo = m_session->GetOutputTypeInfo(i);
 			auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
 			m_output_shape = tensorInfo.GetShape();
+		}
+
+		for (auto& name : m_output_name)
+		{
+			m_output_name_ptr.push_back(name.c_str());
 		}
 
 		m_is_loaded = true;

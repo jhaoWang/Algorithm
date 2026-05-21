@@ -19,7 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LmkInfer.cpp" />
+    <ClCompile Include="LmkDetect_module.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LmkDetect_module.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="landmark.onnx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
