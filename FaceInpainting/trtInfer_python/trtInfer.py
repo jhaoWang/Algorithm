@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import tensorrt as trt
 import pycuda.driver as cuda
+import time
 import pycuda.autoinit
 
 TRT_ENGINE_PATH = r"E:\code_git\Algorithm\FaceInpainting\trtInfer_python\inpaint.engine"
@@ -57,10 +58,15 @@ cuda.memcpy_htod(d_input_mask, input_mask)
 
 # 推理
 bindings = [int(d_input_img), int(d_input_landmark), int(d_input_mask), int(d_output)]
+cuda.Context.synchronize()
+start_time = time.time()  # 开始
 context.execute_v2(bindings)
-
+cuda.Context.synchronize()
 cuda.memcpy_dtoh(output, d_output)
+end_time = time.time()
 
+infer_time = (end_time - start_time) * 1000
+print(f"🔥 Python 纯模型推理时间: {infer_time:.2f} ms")
 # ====================== 4. 后处理 ======================
 output = output[0].transpose(1, 2, 0).copy()
 output = np.clip(output * 255, 0, 255).astype(np.uint8)
