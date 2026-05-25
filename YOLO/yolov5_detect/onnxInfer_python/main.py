@@ -4,7 +4,7 @@ import onnxruntime as ort
 import time
 
 ONNX_MODEL_PATH = "yolov5s.onnx"
-IMAGE_PATH = "zidane.jpg"
+IMAGE_PATH = "bus.jpg"
 CONF_THRESHOLD = 0.25
 IOU_THRESHOLD = 0.45
 INPUT_SIZE = 640
