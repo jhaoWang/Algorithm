@@ -1,5 +1,6 @@
 #include "yolov5Det_moudle.h"
 #include <algorithm>
+#include <chrono> 
 
 // ======================= Onnx相关类实现 ==========================
 Yolov5OnnxEngine::Yolov5OnnxEngine()
@@ -7,7 +8,9 @@ Yolov5OnnxEngine::Yolov5OnnxEngine()
 {
 	m_env = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "Yolov5OnnxInference");
 	m_session_option = std::make_unique<Ort::SessionOptions>();
-	m_session_option->SetIntraOpNumThreads(1);
+	m_session_option->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+	//m_session_option->SetIntraOpNumThreads(std::thread::hardware_concurrency());
+	//m_session_option->SetIntraOpNumThreads(1);
 	m_memoryInfo = std::make_unique<Ort::MemoryInfo>(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
 }
 
@@ -78,7 +81,7 @@ void Yolov5OnnxEngine::setInputName(const std::vector<std::string>& inputnames)
 	}
 }
 
-bool Yolov5OnnxEngine::inference(const std::vector<float>& img, std::vector<float>& output)
+bool Yolov5OnnxEngine::inference(const cv::Mat& img, std::vector<float>& output)
 {
 	if (!is_loaded)
 	{
@@ -90,7 +93,7 @@ bool Yolov5OnnxEngine::inference(const std::vector<float>& img, std::vector<floa
 		std::vector<int64_t> input_shape{ 1, 3, 640, 640 };
 
 		std::vector<Ort::Value> input_tensor;
-		input_tensor.push_back(Ort::Value::CreateTensor(*m_memoryInfo, const_cast<float*>(img.data()), img.size(), input_shape.data(), input_shape.size()));
+		input_tensor.push_back(Ort::Value::CreateTensor(*m_memoryInfo, (float*)img.data, 3 * 640 * 640, input_shape.data(), input_shape.size()));
 
 		std::vector<Ort::Value> output_tensor = m_session->Run(
 			Ort::RunOptions{ nullptr },
@@ -126,7 +129,7 @@ bool ImageProcess::loadImage(const std::string& path, cv::Mat& img)
 	return true;
 }
 
-std::vector<float> ImageProcess::preprocessImg(const cv::Mat& img, int input_size, double& scale, int& pad_w, int& pad_h)
+cv::Mat ImageProcess::preprocessImg(const cv::Mat& img, int input_size, double& scale, int& pad_w, int& pad_h)
 {
 	int h = img.rows;
 	int w = img.cols;
@@ -148,18 +151,27 @@ std::vector<float> ImageProcess::preprocessImg(const cv::Mat& img, int input_siz
 	cv::cvtColor(canvas, canvas, cv::COLOR_BGR2RGB);
 	canvas.convertTo(canvas, CV_32F, 1 / 255.0);
 
-	std::vector<float> input;
-	input.reserve(3 * input_size * input_size);
+	//std::vector<float> input;
+	//input.reserve(3 * input_size * input_size);
 
-	for (int c = 0; c < 3; c++) {
-		for (int y = 0; y < input_size; y++) {
-			for (int x = 0; x < input_size; x++) {
-				input.push_back(canvas.at<cv::Vec3f>(y, x)[c]);
-			}
-		}
+	//for (int c = 0; c < 3; c++) {
+	//	for (int y = 0; y < input_size; y++) {
+	//		for (int x = 0; x < input_size; x++) {
+	//			input.push_back(canvas.at<cv::Vec3f>(y, x)[c]);
+	//		}
+	//	}
+	//}
+	std::vector<cv::Mat> channels(3);
+	cv::split(canvas, channels);
+	cv::Mat blob(1, 3 * input_size * input_size, CV_32F);
+	// std::vector<float> input(3 * input_size * input_size);
+	float* data = blob.ptr<float>();
+	//float* data = input.data();
+	for (int i = 0; i < 3; i++) {
+		channels[i].copyTo(cv::Mat(input_size, input_size, CV_32F, data + i * input_size * input_size));
 	}
 
-	return input;
+	return blob;
 }
 
 std::vector<DetResult> ImageProcess::postProcessImg(const std::vector<float>& preds, int ori_h, int ori_w, int input_size,
@@ -248,6 +260,8 @@ void Detection::setInputPath(const std::string& img_path)
 
 bool Detection::run()
 {
+	auto total_start = std::chrono::high_resolution_clock::now();
+
 	if (!m_processor->loadImage(m_img_path, m_img)) return false;
 
 	int ori_h = m_img.rows;
@@ -255,13 +269,33 @@ bool Detection::run()
 
 	double scale;
 	int pad_w, pad_h;
-	std::vector<float> input_img = m_processor->preprocessImg(m_img, 640, scale, pad_w, pad_h);
+
+	auto pre_start = std::chrono::high_resolution_clock::now();
+	cv::Mat input_img = m_processor->preprocessImg(m_img, 640, scale, pad_w, pad_h);
+	auto pre_end = std::chrono::high_resolution_clock::now();
+	double pre_time = std::chrono::duration<double, std::milli>(pre_end - pre_start).count();
 
 	std::vector<float> output_data;
+	auto infer_start = std::chrono::high_resolution_clock::now();
 	bool success = m_infer->inference(input_img, output_data);
+	auto infer_end = std::chrono::high_resolution_clock::now();
+	double infer_time = std::chrono::duration<double, std::milli>(infer_end - infer_start).count();
 	if (!success) return false;
 
+	auto post_start = std::chrono::high_resolution_clock::now();
 	std::vector<DetResult> det_res = m_processor->postProcessImg(output_data, ori_h, ori_w, 640, 0.25f, 0.45f, scale, pad_w, pad_h);
+	auto post_end = std::chrono::high_resolution_clock::now();
+	double post_time = std::chrono::duration<double, std::milli>(post_end - post_start).count();
+
+	auto total_end = std::chrono::high_resolution_clock::now();
+	double total_time = std::chrono::duration<double, std::milli>(total_end - total_start).count();
+
+	printf("=========================================\n");
+	printf("预处理时间: %.2f ms\n", pre_time);
+	printf("推理时间  : %.2f ms\n", infer_time);
+	printf("后处理时间: %.2f ms\n", post_time);
+	printf("总耗时    : %.2f ms\n", total_time);
+	printf("=========================================\n");
 
 	cv::Mat after_pos;
 	res_final = m_processor->drawResult(det_res, CLASS_NAMES, m_img);

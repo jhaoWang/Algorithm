@@ -7,6 +7,17 @@ import torch
 # ====================== 加载 ONNX 模型 ======================
 ort_sess = ort.InferenceSession("E:\\pythonCode\\lafin-master\\lafin-master\\inpaint.onnx")
 
+input_type = ort_sess.get_inputs()[0].type
+print("模型输入精度类型：", input_type)
+
+if "float16" in input_type:
+    print("✅ 模型精度：FP16")
+elif "float32" in input_type:
+    print("✅ 模型精度：FP32")
+elif "uint8" in input_type or "int8" in input_type:
+    print("✅ 模型精度：INT8 (量化模型)")
+
+
 # ====================== 1. 读取 3 张真实图片 ======================
 # 人脸图
 img = cv2.imread("E:\\pythonCode\\lafin-master\\lafin-master\\examples\\images\\195579.jpg")

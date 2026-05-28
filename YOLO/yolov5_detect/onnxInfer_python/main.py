@@ -3,8 +3,8 @@ import numpy as np
 import onnxruntime as ort
 import time
 
-ONNX_MODEL_PATH = "yolov5s.onnx"
-IMAGE_PATH = "bus.jpg"
+ONNX_MODEL_PATH = "E:\\code_git\\Algorithm\\YOLO\\yolov5_detect\\onnxInfer_python\\yolov5s.onnx"
+IMAGE_PATH = "E:\\code_git\\Algorithm\\YOLO\\yolov5_detect\\onnxInfer_python\\bus.jpg"
 CONF_THRESHOLD = 0.25
 IOU_THRESHOLD = 0.45
 INPUT_SIZE = 640
@@ -12,6 +12,16 @@ INPUT_SIZE = 640
 session = ort.InferenceSession(ONNX_MODEL_PATH)
 input_name = session.get_inputs()[0].name
 output_name = session.get_outputs()[0].name
+
+input_type = session.get_inputs()[0].type
+print("模型输入精度类型：", input_type)
+
+if "float16" in input_type:
+    print("✅ 模型精度：FP16")
+elif "float32" in input_type:
+    print("✅ 模型精度：FP32")
+elif "uint8" in input_type or "int8" in input_type:
+    print("✅ 模型精度：INT8 (量化模型)")
 
 
 def preprocess(image_path, input_size):
@@ -102,6 +112,9 @@ for box, score, cls_id in zip(boxes, scores, class_ids):
     cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
 cv2.imwrite("result.jpg", img)
+cv2.imshow("Detection Result", img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 print(f"检测完成！共检测到 {len(boxes)} 个目标")
 
 # ======================== 输出时间 ========================

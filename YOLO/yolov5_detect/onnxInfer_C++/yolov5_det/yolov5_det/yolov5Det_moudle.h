@@ -29,7 +29,7 @@ public:
 	~Yolov5OnnxEngine();
 	bool loadModel(const std::string& model_path);
 	void setInputName(const std::vector<std::string>& inputname);
-	bool inference(const std::vector<float>& img, std::vector<float>& output);
+	bool inference(const cv::Mat& img, std::vector<float>& output);
 	std::vector<int64_t> getOutputShape() const { return m_output_shape; };
 
 private:
@@ -53,7 +53,7 @@ public:
 	~ImageProcess();
 
 	bool loadImage(const std::string& path, cv::Mat& img);
-	std::vector<float> preprocessImg(const cv::Mat& img, int inputsize, double& scale, int& pad_w, int& pad_h);
+	cv::Mat preprocessImg(const cv::Mat& img, int inputsize, double& scale, int& pad_w, int& pad_h);
 	std::vector<DetResult> postProcessImg(const std::vector<float>& pred, int ori_h, int ori_w, int input_size,
 		float conf_thres, float iou_thres, double scale, int pad_w, int pad_h);
 
