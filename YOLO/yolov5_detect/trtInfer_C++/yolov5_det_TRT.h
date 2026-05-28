@@ -75,30 +75,6 @@ private:
 	void freeBuffers();
 };
 
-//class ImageProcess {
-//public:
-//	ImageProcess();
-//	~ImageProcess();
-//
-//	ImageProcess(const ImageProcess&) = delete;
-//	ImageProcess& operator=(const ImageProcess&) = delete;
-//
-//	bool loadImage(const std::string& path, cv::Mat& img);
-//	cv::Mat preprocessImg(const cv::Mat& img, int inputsize, double& scale, int& pad_w, int& pad_h);
-//	//void preprocessImg(const cv::Mat& img, int input_size, float* blob_data, double& scale, int& pad_w, int& pad_h);
-//	//std::vector<DetResult> postProcessImg(const std::vector<float>& pred, int ori_h, int ori_w, int input_size,
-//	//	float conf_thres, float iou_thres, double scale, int pad_w, int pad_h);
-//
-//	std::vector<DetResult> postProcessImg(const float* preds, int pred_num,
-//		int ori_h, int ori_w, int input_size,
-//		float conf_thres, float iou_thres,
-//		double scale, int pad_w, int pad_h);
-//
-//	//cv::Mat drawResult(const std::vector<DetResult>& res_post, const std::vector<std::string>& class_det, cv::Mat& result);
-//	void drawResult(cv::Mat& img, const std::vector<DetResult>& results,
-//		const std::vector<std::string>& class_names);
-//};
-
 class ImageProcess {
 public:
 	ImageProcess();
@@ -111,40 +87,6 @@ public:
 
 	cv::Mat drawResult(const std::vector<DetResult>& res_post, const std::vector<std::string>& class_det, cv::Mat& result);
 };
-
-//class yoloDet
-//{
-//public:
-//	yoloDet();
-//	~yoloDet();
-//	bool Init(const std::string& modelpath);
-//	bool loadImg(const std::string& img_path);
-//	bool runInference();
-//	void DrawandshowResult();
-//private:
-//	static const int INPUT_SIZE = 640;
-//	static const int NUM_BOXES = 25200;
-//	static const int BOX_DIM = 85;
-//
-//	std::unique_ptr<TrtInferEngine> Infer_;
-//	std::unique_ptr<ImageProcess> Processor_;
-//
-//	double scale_;
-//	int pad_w_;
-//	int pad_h_;
-//	bool isInitialized_;
-//	cv::Mat m_img;
-//	cv::Mat out_img;
-//	std::vector<DetResult> det_res_;
-//
-//	cv::Mat input_img;
-//
-//	std::vector<float> input_blob_;
-//	std::vector<float> output_blob_;
-//
-//	bool copyToDevice();
-//	bool copyFromDevice();
-//};
 
 class yoloDet
 {
