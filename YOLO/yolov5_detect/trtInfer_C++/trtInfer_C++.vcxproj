@@ -127,11 +127,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="video.cpp" />
     <ClCompile Include="yolov5_det_TRT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="yolov5_det_TRT.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="test.mp4" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -288,8 +288,8 @@ cv::Mat ImageProcess::drawResult(const std::vector<DetResult>& res_post, const s
 
 // ========================== 检测类实现 ============================
 yoloDet::yoloDet()
-	: h_(640)
-	, w_(640)
+	: scale(1.0)
+	, IMAGE_SIZE(640)
 	, isInitialized(false)
 {
 	Infer_ = std::make_unique<TrtInferEngine>();
@@ -306,7 +306,7 @@ bool yoloDet::Init(const std::string& modelpath)
 	if (!Infer_->loadEngine(modelpath)) return false;
 	if (!Infer_->createContext()) return false;
 
-	size_t img_size = 3 * h_ * w_ * sizeof(float);
+	size_t img_size = 3 * IMAGE_SIZE * IMAGE_SIZE * sizeof(float);
 	size_t out_size = 1 * 25200 * 85 * sizeof(float);
 
 	std::vector<size_t> bufferSizes{ img_size, out_size };
@@ -415,8 +415,77 @@ bool yoloDet::copyFromDevice()
 
 void yoloDet::DrawandshowResult()
 {
-	out_img = Processor_->drawResult(det_res_, CLASS_NAMES, m_img);
-	cv::imshow("Inpainting result", out_img);
-	cv::waitKey(0);
-	cv::destroyAllWindows();
+	cv::Mat temp_img = m_img.clone();
+	out_img = Processor_->drawResult(det_res_, CLASS_NAMES, temp_img);
+	//cv::imshow("Inpainting result", out_img);
+	//cv::waitKey(1);
+	//cv::destroyAllWindows();
+}
+
+// ================= 异步队列实现 ===========================
+void FrameQueue::push(cv::Mat frame)
+{
+	std::unique_lock<std::mutex> lock(mtx);
+	if (queue_.size() > 30)
+	{
+		queue_.pop();
+	}
+	queue_.push(std::move(frame));
+	cv_.notify_one();
+}
+
+bool FrameQueue::pop(cv::Mat& frame)
+{
+	std::unique_lock<std::mutex> lock(mtx);
+	cv_.wait(lock, [this]() {
+		return !queue_.empty() || stop_;
+		});
+
+	if (queue_.empty() && stop_) return false;
+
+	frame = std::move(queue_.front());
+	queue_.pop();
+	return true;
+}
+
+void FrameQueue::stop()
+{
+	stop_ = true;
+	cv_.notify_all();
+}
+
+// ===================== yoloDet_video类实现 ==================
+yoloDet_Video::yoloDet_Video(yoloDet& det)
+	: det_(det)
+{
+
+}
+
+void yoloDet_Video::start(FrameQueue& inQueue, FrameQueue& outQueue)
+{
+	infer_thread_ = std::thread(&yoloDet_Video::inferLoop, this, std::ref(inQueue), std::ref(outQueue));
+}
+
+void yoloDet_Video::stop()
+{
+	stop_ = true;
+	if (infer_thread_.joinable())
+		infer_thread_.join();
+}
+
+void yoloDet_Video::inferLoop(FrameQueue& inQueue, FrameQueue& outQueue)
+{
+	cv::Mat frame;
+	while (inQueue.pop(frame)) {
+		det_.setInput(frame);
+
+		if (!det_.runInference())
+			continue;
+
+		det_.DrawandshowResult();
+
+		cv::Mat draw_img = det_.getResultImage();
+
+		outQueue.push(std::move(draw_img));
+	}
 }

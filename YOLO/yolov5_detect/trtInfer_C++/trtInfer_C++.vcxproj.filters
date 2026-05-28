@@ -18,7 +18,7 @@
     <ClCompile Include="yolov5_det_TRT.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="video.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,5 +26,8 @@
     <ClInclude Include="yolov5_det_TRT.h">
       <Filter>头文件</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="test.mp4" />
   </ItemGroup>
 </Project>

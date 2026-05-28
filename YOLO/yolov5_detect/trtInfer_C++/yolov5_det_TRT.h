@@ -3,6 +3,8 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <NvInfer.h>
+#include <queue>
+#include <thread>
 
 static std::vector<std::string> CLASS_NAMES = {
 	"person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
@@ -97,12 +99,13 @@ public:
 	bool loadImg(const std::string& img_path);
 	bool runInference();
 	void DrawandshowResult();
+	void setInput(const cv::Mat& img) { m_img = img.clone(); };
+	cv::Mat getResultImage() { return out_img; }
 private:
 	std::unique_ptr<TrtInferEngine> Infer_;
 	std::unique_ptr<ImageProcess> Processor_;
 
-	int h_;
-	int w_;
+	int IMAGE_SIZE;
 	double scale;
 	int pad_w, pad_h;
 	bool isInitialized;
@@ -113,4 +116,29 @@ private:
 
 	bool copyToDevice();
 	bool copyFromDevice();
+};
+
+class FrameQueue {
+public:
+	void push(cv::Mat frame);
+	bool pop(cv::Mat& frame);
+	void stop();
+private:
+	std::queue<cv::Mat> queue_;
+	std::mutex mtx;
+	std::condition_variable cv_;
+	std::atomic<bool> stop_{ false };
+};
+
+class yoloDet_Video {
+public:
+	yoloDet_Video(yoloDet& det);
+	void start(FrameQueue& inQueue, FrameQueue& outQueue);
+	void stop();
+private:
+	yoloDet& det_;
+	std::thread infer_thread_;
+	std::atomic<bool> stop_{ false };
+
+	void inferLoop(FrameQueue& inQueue, FrameQueue& outQueue);
 };
