@@ -210,22 +210,12 @@ cv::Mat ImageProcess::preprocessImg(const cv::Mat& img, int input_size, double& 
 	cv::cvtColor(canvas, canvas, cv::COLOR_BGR2RGB);
 	canvas.convertTo(canvas, CV_32F, 1 / 255.0);
 
-	//std::vector<float> input;
-	//input.reserve(3 * input_size * input_size);
-
-	//for (int c = 0; c < 3; c++) {
-	//	for (int y = 0; y < input_size; y++) {
-	//		for (int x = 0; x < input_size; x++) {
-	//			input.push_back(canvas.at<cv::Vec3f>(y, x)[c]);
-	//		}
-	//	}
-	//}
 	std::vector<cv::Mat> channels(3);
 	cv::split(canvas, channels);
 	cv::Mat blob(1, 3 * input_size * input_size, CV_32F);
-	// std::vector<float> input(3 * input_size * input_size);
+
 	float* data = blob.ptr<float>();
-	//float* data = input.data();
+
 	for (int i = 0; i < 3; i++) {
 		channels[i].copyTo(cv::Mat(input_size, input_size, CV_32F, data + i * input_size * input_size));
 	}
